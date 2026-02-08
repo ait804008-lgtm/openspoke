@@ -1,7 +1,7 @@
 import { Stop } from '@/types';
 import { formatDistance, formatDuration } from '@/lib/utils';
 import { MapPin, Clock, Phone, Package, CheckCircle, XCircle, Truck } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
+import { Card, CardBody } from '@/components/ui/Card';
 
 interface StopCardProps {
   stop: Stop;

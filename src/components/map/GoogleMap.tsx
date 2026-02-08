@@ -1,7 +1,15 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+
+// @ts-ignore
 import { Loader } from '@googlemaps/js-api-loader';
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 
 interface GoogleMapProps {
   center?: { lat: number; lng: number };
@@ -13,9 +21,9 @@ interface GoogleMapProps {
   }>;
   polyline?: {
     path: Array<{ lat: number; lng: number }>;
-    options?: google.maps.PolylineOptions;
+    options?: any;
   };
-  onMapClick?: (event: google.maps.MapMouseEvent) => void;
+  onMapClick?: (event: any) => void;
   className?: string;
 }
 
@@ -28,20 +36,25 @@ export function GoogleMap({
   className = '',
 }: GoogleMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [markersMap, setMarkersMap] = useState<Map<string, google.maps.Marker>>(new Map());
-  const [polylineInstance, setPolylineInstance] = useState<google.maps.Polyline | null>(null);
+  const [map, setMap] = useState<any>(null);
+  const [markersMap, setMarkersMap] = useState<Map<string, any>>(new Map());
+  const [polylineInstance, setPolylineInstance] = useState<any>(null);
 
   useEffect(() => {
-    const loader = new Loader({
-      apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-      version: 'weekly',
-      libraries: ['places', 'geometry'],
-    });
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      console.warn('Google Maps API key not found');
+      return;
+    }
 
-    loader.load().then(() => {
-      if (mapRef.current && !map) {
-        const mapInstance = new google.maps.Map(mapRef.current, {
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&v=weekly`;
+    script.async = true;
+    script.defer = true;
+
+    script.onload = () => {
+      if (mapRef.current && !map && window.google) {
+        const mapInstance = new window.google.maps.Map(mapRef.current, {
           center,
           zoom,
           mapTypeId: 'roadmap',
@@ -60,25 +73,34 @@ export function GoogleMap({
 
         setMap(mapInstance);
       }
-    });
+    };
+
+    document.head.appendChild(script);
+
+    return () => {
+      // Cleanup script
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    };
   }, [center, zoom, map, onMapClick]);
 
   // Update markers
   useEffect(() => {
-    if (!map) return;
+    if (!map || !window.google) return;
 
     // Clear existing markers
     markersMap.forEach((marker) => marker.setMap(null));
-    const newMarkersMap = new Map<string, google.maps.Marker>();
+    const newMarkersMap = new Map<string, any>();
 
     // Add new markers
     markers.forEach((markerData, index) => {
-      const marker = new google.maps.Marker({
+      const marker = new window.google.maps.Marker({
         position: markerData.position,
         map,
         title: markerData.title,
         label: markerData.label || String(index + 1),
-        animation: google.maps.Animation.DROP,
+        animation: window.google.maps.Animation.DROP,
       });
 
       newMarkersMap.set(`marker-${index}`, marker);
@@ -89,7 +111,7 @@ export function GoogleMap({
 
   // Update polyline
   useEffect(() => {
-    if (!map || !polyline) return;
+    if (!map || !polyline || !window.google) return;
 
     // Clear existing polyline
     if (polylineInstance) {
@@ -97,7 +119,7 @@ export function GoogleMap({
     }
 
     // Create new polyline
-    const polylinePath = new google.maps.Polyline({
+    const polylinePath = new window.google.maps.Polyline({
       path: polyline.path,
       map,
       geodesic: true,
@@ -112,9 +134,9 @@ export function GoogleMap({
 
   // Fit bounds to markers
   useEffect(() => {
-    if (!map || markers.length === 0) return;
+    if (!map || markers.length === 0 || !window.google) return;
 
-    const bounds = new google.maps.LatLngBounds();
+    const bounds = new window.google.maps.LatLngBounds();
     markers.forEach((marker) => {
       bounds.extend(marker.position);
     });
