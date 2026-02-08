@@ -18,6 +18,7 @@ export const generateMockTrips = (dispatcherId: string, count: number = 3) => {
     date: new Date(Date.now() + i * 24 * 60 * 60 * 1000).toISOString(),
     status: statuses[i % statuses.length],
     priority: ['low', 'medium', 'high'][i % 3],
+    stops: [], // Empty initially, stops added separately
     optimizedRoute: i % 2 === 0 ? {
       distance: 5000 + Math.random() * 10000,
       duration: 1200 + Math.random() * 1800,

@@ -62,7 +62,7 @@ export function calculateRouteDistance(
   return totalDistance;
 }
 
-function haversineDistance(
+export function haversineDistance(
   lat1: number,
   lng1: number,
   lat2: number,
