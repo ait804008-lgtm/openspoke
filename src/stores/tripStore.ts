@@ -1,10 +1,12 @@
 import { create } from 'zustand';
+import { tripsApi, stopsApi } from '@/lib/api';
 import type { Trip, Stop } from '@/types';
 
 interface TripState {
   trips: Trip[];
   currentTrip: Trip | null;
   isLoading: boolean;
+  loadTrips: (dispatcherId: string) => Promise<void>;
   createTrip: (trip: Omit<Trip, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateTrip: (id: string, updates: Partial<Trip>) => Promise<void>;
   deleteTrip: (id: string) => Promise<void>;
@@ -15,188 +17,188 @@ interface TripState {
   optimizeRoute: (tripId: string) => Promise<void>;
 }
 
-export const useTripStore = create<TripState>((set) => ({
+export const useTripStore = create<TripState>((set, get) => ({
   trips: [],
   currentTrip: null,
   isLoading: false,
 
+  loadTrips: async (dispatcherId: string) => {
+    set({ isLoading: true });
+    try {
+      const { trips } = await tripsApi.list(dispatcherId);
+      set({ trips, isLoading: false });
+    } catch (error) {
+      console.error('Failed to load trips:', error);
+      set({ isLoading: false });
+    }
+  },
+
   createTrip: async (tripData) => {
     set({ isLoading: true });
-
-    // Mock API call - replace with actual API
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const newTrip: Trip = {
-      ...tripData,
-      id: `trip-${Date.now()}`,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    set((state) => ({
-      trips: [...state.trips, newTrip],
-      isLoading: false,
-    }));
+    try {
+      const trip = await tripsApi.create(tripData);
+      set((state) => ({
+        trips: [...state.trips, trip],
+        currentTrip: trip,
+        isLoading: false,
+      }));
+    } catch (error) {
+      console.error('Failed to create trip:', error);
+      set({ isLoading: false });
+      throw error;
+    }
   },
 
   updateTrip: async (id, updates) => {
     set({ isLoading: true });
-
-    // Mock API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    set((state) => ({
-      trips: state.trips.map((trip) =>
-        trip.id === id ? { ...trip, ...updates, updatedAt: new Date() } : trip
-      ),
-      currentTrip:
-        state.currentTrip?.id === id
-          ? { ...state.currentTrip, ...updates, updatedAt: new Date() }
-          : state.currentTrip,
-      isLoading: false,
-    }));
+    try {
+      const updatedTrip = await tripsApi.update(id, updates);
+      set((state) => ({
+        trips: state.trips.map((trip) =>
+          trip.id === id ? updatedTrip : trip
+        ),
+        currentTrip:
+          state.currentTrip?.id === id ? updatedTrip : state.currentTrip,
+        isLoading: false,
+      }));
+    } catch (error) {
+      console.error('Failed to update trip:', error);
+      set({ isLoading: false });
+      throw error;
+    }
   },
 
   deleteTrip: async (id) => {
     set({ isLoading: true });
-
-    // Mock API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    set((state) => ({
-      trips: state.trips.filter((trip) => trip.id !== id),
-      currentTrip: state.currentTrip?.id === id ? null : state.currentTrip,
-      isLoading: false,
-    }));
+    try {
+      await tripsApi.delete(id);
+      set((state) => ({
+        trips: state.trips.filter((trip) => trip.id !== id),
+        currentTrip: state.currentTrip?.id === id ? null : state.currentTrip,
+        isLoading: false,
+      }));
+    } catch (error) {
+      console.error('Failed to delete trip:', error);
+      set({ isLoading: false });
+      throw error;
+    }
   },
 
   setCurrentTrip: (trip) => set({ currentTrip: trip }),
 
   addStop: async (tripId, stopData) => {
     set({ isLoading: true });
-
-    // Mock API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const newStop: Stop = {
-      ...stopData,
-      id: `stop-${Date.now()}`,
-    };
-
-    set((state) => ({
-      trips: state.trips.map((trip) =>
-        trip.id === tripId
-          ? {
-              ...trip,
-              stops: [...trip.stops, newStop],
-              updatedAt: new Date(),
-            }
-          : trip
-      ),
-      currentTrip:
-        state.currentTrip?.id === tripId
-          ? {
-              ...state.currentTrip,
-              stops: [...state.currentTrip.stops, newStop],
-              updatedAt: new Date(),
-            }
-          : state.currentTrip,
-      isLoading: false,
-    }));
+    try {
+      const stop = await stopsApi.create(stopData);
+      set((state) => ({
+        trips: state.trips.map((trip) =>
+          trip.id === tripId
+            ? { ...trip, stops: [...trip.stops, stop], updatedAt: new Date() as any }
+            : trip
+        ),
+        currentTrip:
+          state.currentTrip?.id === tripId
+            ? {
+                ...state.currentTrip,
+                stops: [...state.currentTrip.stops, stop],
+                updatedAt: new Date() as any,
+              }
+            : state.currentTrip,
+        isLoading: false,
+      }));
+    } catch (error) {
+      console.error('Failed to add stop:', error);
+      set({ isLoading: false });
+      throw error;
+    }
   },
 
   updateStop: async (tripId, stopId, updates) => {
     set({ isLoading: true });
-
-    // Mock API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    set((state) => ({
-      trips: state.trips.map((trip) =>
-        trip.id === tripId
-          ? {
-              ...trip,
-              stops: trip.stops.map((stop) =>
-                stop.id === stopId ? { ...stop, ...updates } : stop
-              ),
-              updatedAt: new Date(),
-            }
-          : trip
-      ),
-      currentTrip:
-        state.currentTrip?.id === tripId
-          ? {
-              ...state.currentTrip,
-              stops: state.currentTrip.stops.map((stop) =>
-                stop.id === stopId ? { ...stop, ...updates } : stop
-              ),
-              updatedAt: new Date(),
-            }
-          : state.currentTrip,
-      isLoading: false,
-    }));
+    try {
+      const updatedStop = await stopsApi.update(stopId, updates);
+      set((state) => ({
+        trips: state.trips.map((trip) =>
+          trip.id === tripId
+            ? {
+                ...trip,
+                stops: trip.stops.map((stop) =>
+                  stop.id === stopId ? updatedStop : stop
+                ),
+                updatedAt: new Date() as any,
+              }
+            : trip
+        ),
+        currentTrip:
+          state.currentTrip?.id === tripId
+            ? {
+                ...state.currentTrip,
+                stops: state.currentTrip.stops.map((stop) =>
+                  stop.id === stopId ? updatedStop : stop
+                ),
+                updatedAt: new Date() as any,
+              }
+            : state.currentTrip,
+        isLoading: false,
+      }));
+    } catch (error) {
+      console.error('Failed to update stop:', error);
+      set({ isLoading: false });
+      throw error;
+    }
   },
 
   deleteStop: async (tripId, stopId) => {
     set({ isLoading: true });
-
-    // Mock API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    set((state) => ({
-      trips: state.trips.map((trip) =>
-        trip.id === tripId
-          ? {
-              ...trip,
-              stops: trip.stops.filter((stop) => stop.id !== stopId),
-              updatedAt: new Date(),
-            }
-          : trip
-      ),
-      currentTrip:
-        state.currentTrip?.id === tripId
-          ? {
-              ...state.currentTrip,
-              stops: state.currentTrip.stops.filter((stop) => stop.id !== stopId),
-              updatedAt: new Date(),
-            }
-          : state.currentTrip,
-      isLoading: false,
-    }));
+    try {
+      await stopsApi.delete(stopId);
+      set((state) => ({
+        trips: state.trips.map((trip) =>
+          trip.id === tripId
+            ? {
+                ...trip,
+                stops: trip.stops.filter((stop) => stop.id !== stopId),
+                updatedAt: new Date() as any,
+              }
+            : trip
+        ),
+        currentTrip:
+          state.currentTrip?.id === tripId
+            ? {
+                ...state.currentTrip,
+                stops: state.currentTrip.stops.filter((stop) => stop.id !== stopId),
+                updatedAt: new Date() as any,
+              }
+            : state.currentTrip,
+        isLoading: false,
+      }));
+    } catch (error) {
+      console.error('Failed to delete stop:', error);
+      set({ isLoading: false });
+      throw error;
+    }
   },
 
   optimizeRoute: async (tripId) => {
     set({ isLoading: true });
-
-    // Mock API call - replace with Google Routes API
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // Mock route optimization result
-    const mockResult = {
-      distance: 15000, // 15km
-      duration: 2700, // 45 minutes
-      polyline: '',
-    };
-
-    set((state) => ({
-      trips: state.trips.map((trip) =>
-        trip.id === tripId
-          ? {
-              ...trip,
-              optimizedRoute: mockResult,
-              updatedAt: new Date(),
-            }
-          : trip
-      ),
-      currentTrip:
-        state.currentTrip?.id === tripId
-          ? {
-              ...state.currentTrip,
-              optimizedRoute: mockResult,
-              updatedAt: new Date(),
-            }
-          : state.currentTrip,
-      isLoading: false,
-    }));
+    try {
+      const { optimizedRoute } = await tripsApi.optimize(tripId);
+      set((state) => ({
+        trips: state.trips.map((trip) =>
+          trip.id === tripId
+            ? { ...trip, optimizedRoute, updatedAt: new Date() as any }
+            : trip
+        ),
+        currentTrip:
+          state.currentTrip?.id === tripId
+            ? { ...state.currentTrip, optimizedRoute, updatedAt: new Date() as any }
+            : state.currentTrip,
+        isLoading: false,
+      }));
+    } catch (error) {
+      console.error('Failed to optimize route:', error);
+      set({ isLoading: false });
+      throw error;
+    }
   },
 }));

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { authApi } from '@/lib/api';
 import type { User, Driver, Dispatcher, Customer } from '@/types';
 
 interface AuthState {
@@ -21,45 +22,40 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
 
-      login: async (email: string, password: string, role) => {
+      login: async (email, password, role) => {
         set({ isLoading: true });
 
-        // Mock login - replace with actual API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        try {
+          const { user } = await authApi.login(email, password, role);
 
-        const mockUser: User = {
-          id: '1',
-          email,
-          name: email.split('@')[0],
-          role,
-          avatar: `https://ui-avatars.com/api/?name=${email}&background=random`,
-          createdAt: new Date(),
-        };
+          // Add role-specific data
+          let userWithRole = user;
+          if (role === 'driver') {
+            userWithRole = {
+              ...user,
+              role: 'driver',
+              vehicleType: 'Van',
+              licenseNumber: 'DL-12345',
+              availability: true,
+              currentLocation: { lat: 40.7128, lng: -74.006 },
+            } as Driver;
+          } else if (role === 'dispatcher') {
+            userWithRole = {
+              ...user,
+              role: 'dispatcher',
+              fleetIds: ['driver-1', 'driver-2'],
+            } as Dispatcher;
+          }
 
-        // Add role-specific data
-        let userWithRole = mockUser;
-        if (role === 'driver') {
-          userWithRole = {
-            ...mockUser,
-            role: 'driver',
-            vehicleType: 'Van',
-            licenseNumber: 'DL-12345',
-            availability: true,
-            currentLocation: { lat: 40.7128, lng: -74.006 },
-          } as Driver;
-        } else if (role === 'dispatcher') {
-          userWithRole = {
-            ...mockUser,
-            role: 'dispatcher',
-            fleetIds: ['driver-1', 'driver-2'],
-          } as Dispatcher;
+          set({
+            user: userWithRole,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+        } catch (error) {
+          set({ isLoading: false });
+          throw error;
         }
-
-        set({
-          user: userWithRole,
-          isAuthenticated: true,
-          isLoading: false,
-        });
       },
 
       logout: () => {
