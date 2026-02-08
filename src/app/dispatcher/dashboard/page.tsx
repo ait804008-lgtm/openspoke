@@ -7,10 +7,11 @@ import { useTripStore } from '@/stores/tripStore';
 import { GoogleMap } from '@/components/map/GoogleMap';
 import { TripList } from '@/components/trip/TripList';
 import { StopCard } from '@/components/stop/StopCard';
+import { StopForm } from '@/components/stop/StopForm';
 import { Card, CardHeader, CardBody, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Plus, LogOut, MapIcon, List } from 'lucide-react';
+import { Plus, LogOut, MapIcon, List, MapPin } from 'lucide-react';
 
 export default function DispatcherDashboard() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function DispatcherDashboard() {
 
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showStopForm, setShowStopForm] = useState(false);
   const [newTripName, setNewTripName] = useState('');
 
   const handleLogout = () => {
@@ -113,7 +115,7 @@ export default function DispatcherDashboard() {
                   <form onSubmit={handleCreateTrip} className="space-y-3">
                     <Input
                       label="Trip Name"
-                      placeholder="e.g., Downtown Deliveries - Feb 7"
+                      placeholder="e.g., Downtown Deliveries - Feb7"
                       value={newTripName}
                       onChange={(e) => setNewTripName(e.target.value)}
                       required
@@ -155,11 +157,21 @@ export default function DispatcherDashboard() {
                         {currentTrip.stops.length} stops • {currentTrip.status}
                       </p>
                     </div>
-                    {currentTrip.optimizedRoute && (
-                      <Button onClick={handleOptimizeRoute} size="sm">
-                        Re-optimize
+                    <div className="flex space-x-2">
+                      <Button
+                        onClick={() => setShowStopForm(true)}
+                        size="sm"
+                        disabled={currentTrip.status === 'completed' || currentTrip.status === 'cancelled'}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Stop
                       </Button>
-                    )}
+                      {currentTrip.optimizedRoute && (
+                        <Button onClick={handleOptimizeRoute} size="sm">
+                          Re-optimize
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
               </Card>
@@ -184,11 +196,30 @@ export default function DispatcherDashboard() {
               {/* Stops */}
               <div>
                 <h3 className="font-semibold text-gray-900 mb-3">Route Stops</h3>
-                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                  {currentTrip.stops.map((stop, index) => (
-                    <StopCard key={stop.id} stop={stop} index={index} />
-                  ))}
-                </div>
+                {currentTrip.stops.length === 0 ? (
+                  <Card>
+                    <CardBody className="text-center py-12">
+                      <MapPin className="mx-auto h-12 w-12 text-gray-300" />
+                      <h3 className="mt-4 font-semibold text-gray-900">No stops yet</h3>
+                      <p className="mt-2 text-sm text-gray-500">
+                        Click "Add Stop" to add delivery stops to this trip
+                      </p>
+                      <Button
+                        onClick={() => setShowStopForm(true)}
+                        className="mt-4"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Your First Stop
+                      </Button>
+                    </CardBody>
+                  </Card>
+                ) : (
+                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                    {currentTrip.stops.map((stop, index) => (
+                      <StopCard key={stop.id} stop={stop} index={index} />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -204,6 +235,11 @@ export default function DispatcherDashboard() {
           )}
         </main>
       </div>
+
+      {/* Stop Form Modal */}
+      {showStopForm && currentTrip && (
+        <StopForm tripId={currentTrip.id} onClose={() => setShowStopForm(false)} />
+      )}
     </div>
   );
 }
