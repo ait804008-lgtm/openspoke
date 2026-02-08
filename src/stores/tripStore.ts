@@ -2,6 +2,12 @@ import { create } from 'zustand';
 import { tripsApi, stopsApi } from '@/lib/api';
 import type { Trip, Stop } from '@/types';
 
+// Extend Trip type to include required timestamp fields
+interface TripWithTimestamps extends Trip {
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface TripState {
   trips: Trip[];
   currentTrip: Trip | null;
@@ -90,10 +96,16 @@ export const useTripStore = create<TripState>((set, get) => ({
     set({ isLoading: true });
     try {
       const stop = await stopsApi.create(stopData);
+      const now = new Date();
+
       set((state) => ({
         trips: state.trips.map((trip) =>
           trip.id === tripId
-            ? { ...trip, stops: [...trip.stops, stop], updatedAt: new Date() as any }
+            ? {
+                ...trip,
+                stops: [...trip.stops, stop],
+                updatedAt: now as TripWithTimestamps['updatedAt'],
+              }
             : trip
         ),
         currentTrip:
@@ -101,7 +113,7 @@ export const useTripStore = create<TripState>((set, get) => ({
             ? {
                 ...state.currentTrip,
                 stops: [...state.currentTrip.stops, stop],
-                updatedAt: new Date() as any,
+                updatedAt: now as TripWithTimestamps['updatedAt'],
               }
             : state.currentTrip,
         isLoading: false,
@@ -117,6 +129,8 @@ export const useTripStore = create<TripState>((set, get) => ({
     set({ isLoading: true });
     try {
       const updatedStop = await stopsApi.update(stopId, updates);
+      const now = new Date();
+
       set((state) => ({
         trips: state.trips.map((trip) =>
           trip.id === tripId
@@ -125,7 +139,7 @@ export const useTripStore = create<TripState>((set, get) => ({
                 stops: trip.stops.map((stop) =>
                   stop.id === stopId ? updatedStop : stop
                 ),
-                updatedAt: new Date() as any,
+                updatedAt: now as TripWithTimestamps['updatedAt'],
               }
             : trip
         ),
@@ -136,7 +150,7 @@ export const useTripStore = create<TripState>((set, get) => ({
                 stops: state.currentTrip.stops.map((stop) =>
                   stop.id === stopId ? updatedStop : stop
                 ),
-                updatedAt: new Date() as any,
+                updatedAt: now as TripWithTimestamps['updatedAt'],
               }
             : state.currentTrip,
         isLoading: false,
@@ -152,13 +166,15 @@ export const useTripStore = create<TripState>((set, get) => ({
     set({ isLoading: true });
     try {
       await stopsApi.delete(stopId);
+      const now = new Date();
+
       set((state) => ({
         trips: state.trips.map((trip) =>
           trip.id === tripId
             ? {
                 ...trip,
                 stops: trip.stops.filter((stop) => stop.id !== stopId),
-                updatedAt: new Date() as any,
+                updatedAt: now as TripWithTimestamps['updatedAt'],
               }
             : trip
         ),
@@ -167,7 +183,7 @@ export const useTripStore = create<TripState>((set, get) => ({
             ? {
                 ...state.currentTrip,
                 stops: state.currentTrip.stops.filter((stop) => stop.id !== stopId),
-                updatedAt: new Date() as any,
+                updatedAt: now as TripWithTimestamps['updatedAt'],
               }
             : state.currentTrip,
         isLoading: false,
@@ -183,15 +199,17 @@ export const useTripStore = create<TripState>((set, get) => ({
     set({ isLoading: true });
     try {
       const { optimizedRoute } = await tripsApi.optimize(tripId);
+      const now = new Date();
+
       set((state) => ({
         trips: state.trips.map((trip) =>
           trip.id === tripId
-            ? { ...trip, optimizedRoute, updatedAt: new Date() as any }
+            ? { ...trip, optimizedRoute, updatedAt: now as TripWithTimestamps['updatedAt'] }
             : trip
         ),
         currentTrip:
           state.currentTrip?.id === tripId
-            ? { ...state.currentTrip, optimizedRoute, updatedAt: new Date() as any }
+            ? { ...state.currentTrip, optimizedRoute, updatedAt: now as TripWithTimestamps['updatedAt'] }
             : state.currentTrip,
         isLoading: false,
       }));
