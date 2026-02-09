@@ -12,8 +12,9 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   required?: boolean;
   maxLength?: number;
   helperText?: string;
-  multiline?: boolean;
-  rows?: number;
+  id?: string;
+  name?: string;
+  disabled?: boolean;
 }
 
 export function Input({
@@ -25,37 +26,35 @@ export function Input({
   required = false,
   maxLength,
   helperText,
-  multiline = false,
-  rows = 3,
-  className,
+  id,
+  name,
+  disabled = false,
+  className: classNameProp = '',
   ...props
 }: InputProps) {
-  const inputElement = React.useRef<HTMLInputElement>(null);
-
   return (
-    <div className={cn("flex flex-col space-y-1", className)}>
+    <div className="flex flex-col space-y-1">
       {label && (
-        <label className="text-sm font-medium text-gray-700">
+        <label htmlFor={id || name} className="text-sm font-medium text-gray-700">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
       )}
       <input
-        ref={inputElement}
-        type={multiline ? 'textarea' : 'text'}
+        id={id || name}
+        name={name}
+        type="text"
         className={cn(
           "px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
-          multiline ? "min-h-[80px] resize-y" : "",
-          error && "border-red-500 focus:ring-red-500",
-          className
+          error && "border-red-500 focus:ring-red-500 focus:border-transparent",
+          classNameProp
         )}
         placeholder={placeholder}
         value={value}
         onChange={onChange}
         required={required}
         maxLength={maxLength}
-        disabled={props.disabled}
-        rows={multiline ? rows : undefined}
+        disabled={disabled}
         {...props}
       />
       {error && (

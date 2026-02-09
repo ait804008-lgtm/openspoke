@@ -37,7 +37,7 @@ export function StopForm({ tripId, onClose }: StopFormProps) {
     }
 
     if (!validatePhone(contactPhone)) {
-      setError('Please enter a valid phone number (e.g., (555) 123-4567)');
+      setError('Please enter a valid phone number');
       return;
     }
 
@@ -60,7 +60,6 @@ export function StopForm({ tripId, onClose }: StopFormProps) {
 
     try {
       await addStop(tripId, {
-        tripId,
         sequence: 0,
         address: {
           street: street.trim(),
@@ -100,17 +99,13 @@ export function StopForm({ tripId, onClose }: StopFormProps) {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardBody className="space-y-4 overflow-y-auto max-h-[calc(100vh-200px)]">
-          {/* Error Display */}
-          {error && (
-            <div className="flex items-start space-x-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          )}
-
+          <div className="flex items-start space-x-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
           <div className="grid md:grid-cols-2 gap-4">
             <Input
-              label="Street Address *"
+              label="Street Address"
               placeholder="123 Main St"
               value={street}
               onChange={(e) => setStreet(e.target.value)}
@@ -119,7 +114,7 @@ export function StopForm({ tripId, onClose }: StopFormProps) {
               helperText="Max 200 characters"
             />
             <Input
-              label="City *"
+              label="City"
               placeholder="New York"
               value={city}
               onChange={(e) => setCity(e.target.value)}
@@ -150,7 +145,7 @@ export function StopForm({ tripId, onClose }: StopFormProps) {
             <p className="text-sm font-medium text-gray-700 mb-3">Contact Information</p>
             <div className="grid md:grid-cols-2 gap-4">
               <Input
-                label="Contact Name *"
+                label="Contact Name"
                 placeholder="John Doe"
                 value={contactName}
                 onChange={(e) => setContactName(e.target.value)}
@@ -159,7 +154,7 @@ export function StopForm({ tripId, onClose }: StopFormProps) {
                 helperText="1-100 characters"
               />
               <Input
-                label="Contact Phone *"
+                label="Contact Phone"
                 placeholder="(555) 123-4567"
                 value={contactPhone}
                 onChange={(e) => setContactPhone(e.target.value)}
@@ -172,7 +167,7 @@ export function StopForm({ tripId, onClose }: StopFormProps) {
             <p className="text-sm font-medium text-gray-700 mb-3">Delivery Details</p>
             <Input
               label="Package Information"
-              placeholder="e.g., Small box - Fragile"
+              placeholder="Small box - Fragile"
               value={packageInfo}
               onChange={(e) => setPackageInfo(e.target.value)}
               maxLength={500}
@@ -181,7 +176,7 @@ export function StopForm({ tripId, onClose }: StopFormProps) {
           </div>
           <Input
             label="Delivery Instructions"
-            placeholder="e.g., Leave at door"
+            placeholder="Leave at door"
             value={instructions}
             onChange={(e) => setInstructions(e.target.value)}
             multiline
