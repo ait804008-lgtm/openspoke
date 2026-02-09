@@ -4,8 +4,8 @@ import type { Trip, Stop } from '@/types';
 
 // Extend Trip type to include required timestamp fields
 interface TripWithTimestamps extends Trip {
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface TripState {
@@ -17,7 +17,7 @@ interface TripState {
   updateTrip: (id: string, updates: Partial<Trip>) => Promise<void>;
   deleteTrip: (id: string) => Promise<void>;
   setCurrentTrip: (trip: Trip | null) => void;
-  addStop: (tripId: string, stop: Omit<Stop, 'id'>) => Promise<void>;
+  addStop: (tripId: string, stop: Omit<Stop, 'id' | 'createdAt'>) => Promise<void>;
   updateStop: (tripId: string, stopId: string, updates: Partial<Stop>) => Promise<void>;
   deleteStop: (tripId: string, stopId: string) => Promise<void>;
   optimizeRoute: (tripId: string) => Promise<void>;
@@ -31,25 +31,38 @@ export const useTripStore = create<TripState>((set, get) => ({
   loadTrips: async (dispatcherId: string) => {
     set({ isLoading: true });
     try {
-      const { trips } = await tripsApi.list(dispatcherId);
+      const response = await tripsApi.list(dispatcherId);
+
+      if (response.status === 500) {
+        throw new Error('Failed to load trips');
+      }
+
+      const { trips } = await response.json();
       set({ trips, isLoading: false });
     } catch (error) {
-      console.error('Failed to load trips:', error);
       set({ isLoading: false });
+      throw error;
     }
   },
 
   createTrip: async (tripData) => {
     set({ isLoading: true });
     try {
-      const trip = await tripsApi.create(tripData);
+      const response = await tripsApi.create(tripData);
+
+      if (response.status === 500) {
+        throw new Error('Failed to create trip');
+      }
+
+      const trip = await response.json();
+      const now = new Date();
+
       set((state) => ({
         trips: [...state.trips, trip],
         currentTrip: trip,
         isLoading: false,
       }));
     } catch (error) {
-      console.error('Failed to create trip:', error);
       set({ isLoading: false });
       throw error;
     }
@@ -58,7 +71,13 @@ export const useTripStore = create<TripState>((set, get) => ({
   updateTrip: async (id, updates) => {
     set({ isLoading: true });
     try {
-      const updatedTrip = await tripsApi.update(id, updates);
+      const response = await tripsApi.update(id, updates);
+
+      if (response.status === 500) {
+        throw new Error('Failed to update trip');
+      }
+
+      const updatedTrip = await response.json();
       set((state) => ({
         trips: state.trips.map((trip) =>
           trip.id === id ? updatedTrip : trip
@@ -68,7 +87,6 @@ export const useTripStore = create<TripState>((set, get) => ({
         isLoading: false,
       }));
     } catch (error) {
-      console.error('Failed to update trip:', error);
       set({ isLoading: false });
       throw error;
     }
@@ -77,14 +95,20 @@ export const useTripStore = create<TripState>((set, get) => ({
   deleteTrip: async (id) => {
     set({ isLoading: true });
     try {
-      await tripsApi.delete(id);
+      const response = await tripsApi.delete(id);
+
+      if (response.status === 500) {
+        throw new Error('Failed to delete trip');
+      }
+
+      await response.json();
+
       set((state) => ({
         trips: state.trips.filter((trip) => trip.id !== id),
         currentTrip: state.currentTrip?.id === id ? null : state.currentTrip,
         isLoading: false,
       }));
     } catch (error) {
-      console.error('Failed to delete trip:', error);
       set({ isLoading: false });
       throw error;
     }
@@ -95,7 +119,13 @@ export const useTripStore = create<TripState>((set, get) => ({
   addStop: async (tripId, stopData) => {
     set({ isLoading: true });
     try {
-      const stop = await stopsApi.create(stopData);
+      const response = await stopsApi.create(stopData);
+
+      if (response.status === 500) {
+        throw new Error('Failed to add stop');
+      }
+
+      const stop = await response.json();
       const now = new Date();
 
       set((state) => ({
@@ -104,7 +134,7 @@ export const useTripStore = create<TripState>((set, get) => ({
             ? {
                 ...trip,
                 stops: [...trip.stops, stop],
-                updatedAt: now as TripWithTimestamps['updatedAt'],
+                updatedAt: now as unknown as string,
               }
             : trip
         ),
@@ -113,13 +143,12 @@ export const useTripStore = create<TripState>((set, get) => ({
             ? {
                 ...state.currentTrip,
                 stops: [...state.currentTrip.stops, stop],
-                updatedAt: now as TripWithTimestamps['updatedAt'],
+                updatedAt: now as unknown as string,
               }
             : state.currentTrip,
         isLoading: false,
       }));
     } catch (error) {
-      console.error('Failed to add stop:', error);
       set({ isLoading: false });
       throw error;
     }
@@ -128,7 +157,13 @@ export const useTripStore = create<TripState>((set, get) => ({
   updateStop: async (tripId, stopId, updates) => {
     set({ isLoading: true });
     try {
-      const updatedStop = await stopsApi.update(stopId, updates);
+      const response = await stopsApi.update(stopId, updates);
+
+      if (response.status === 500) {
+        throw new Error('Failed to update stop');
+      }
+
+      const updatedStop = await response.json();
       const now = new Date();
 
       set((state) => ({
@@ -139,7 +174,7 @@ export const useTripStore = create<TripState>((set, get) => ({
                 stops: trip.stops.map((stop) =>
                   stop.id === stopId ? updatedStop : stop
                 ),
-                updatedAt: now as TripWithTimestamps['updatedAt'],
+                updatedAt: now as unknown as string,
               }
             : trip
         ),
@@ -150,13 +185,12 @@ export const useTripStore = create<TripState>((set, get) => ({
                 stops: state.currentTrip.stops.map((stop) =>
                   stop.id === stopId ? updatedStop : stop
                 ),
-                updatedAt: now as TripWithTimestamps['updatedAt'],
+                updatedAt: now as unknown as string,
               }
             : state.currentTrip,
         isLoading: false,
       }));
     } catch (error) {
-      console.error('Failed to update stop:', error);
       set({ isLoading: false });
       throw error;
     }
@@ -165,7 +199,13 @@ export const useTripStore = create<TripState>((set, get) => ({
   deleteStop: async (tripId, stopId) => {
     set({ isLoading: true });
     try {
-      await stopsApi.delete(stopId);
+      const response = await stopsApi.delete(stopId);
+
+      if (response.status === 500) {
+        throw new Error('Failed to delete stop');
+      }
+
+      await response.json();
       const now = new Date();
 
       set((state) => ({
@@ -174,7 +214,7 @@ export const useTripStore = create<TripState>((set, get) => ({
             ? {
                 ...trip,
                 stops: trip.stops.filter((stop) => stop.id !== stopId),
-                updatedAt: now as TripWithTimestamps['updatedAt'],
+                updatedAt: now as unknown as string,
               }
             : trip
         ),
@@ -183,13 +223,12 @@ export const useTripStore = create<TripState>((set, get) => ({
             ? {
                 ...state.currentTrip,
                 stops: state.currentTrip.stops.filter((stop) => stop.id !== stopId),
-                updatedAt: now as TripWithTimestamps['updatedAt'],
+                updatedAt: now as unknown as string,
               }
             : state.currentTrip,
         isLoading: false,
       }));
     } catch (error) {
-      console.error('Failed to delete stop:', error);
       set({ isLoading: false });
       throw error;
     }
@@ -198,23 +237,36 @@ export const useTripStore = create<TripState>((set, get) => ({
   optimizeRoute: async (tripId) => {
     set({ isLoading: true });
     try {
-      const { optimizedRoute } = await tripsApi.optimize(tripId);
+      const response = await tripsApi.optimize(tripId);
+
+      if (response.status === 500) {
+        throw new Error('Failed to optimize route');
+      }
+
+      const { optimizedRoute } = await response.json();
       const now = new Date();
 
       set((state) => ({
         trips: state.trips.map((trip) =>
           trip.id === tripId
-            ? { ...trip, optimizedRoute, updatedAt: now as TripWithTimestamps['updatedAt'] }
+            ? {
+                ...trip,
+                optimizedRoute,
+                updatedAt: now as unknown as string,
+              }
             : trip
         ),
         currentTrip:
           state.currentTrip?.id === tripId
-            ? { ...state.currentTrip, optimizedRoute, updatedAt: now as TripWithTimestamps['updatedAt'] }
+            ? {
+                ...state.currentTrip,
+                optimizedRoute,
+                updatedAt: now as unknown as string,
+              }
             : state.currentTrip,
         isLoading: false,
       }));
     } catch (error) {
-      console.error('Failed to optimize route:', error);
       set({ isLoading: false });
       throw error;
     }

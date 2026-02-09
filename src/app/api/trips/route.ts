@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // In-memory data storage (mock database)
 let trips: any[] = [];
+let stops: any[] = [];
+let tripCounter = 1;
 let stopCounter = 1;
 
 // Validation utilities
@@ -25,27 +27,14 @@ function validateTripData(body: any): { valid: boolean; error?: string } {
   return { valid: true };
 }
 
-function isValidId(id: string): boolean {
-  // Basic ID validation - in production, use proper UUID validation
-  return typeof id === 'string' && id.length > 0 && id.length < 100;
-}
-
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const dispatcherId = searchParams.get('dispatcherId');
 
   try {
     let filteredTrips = trips;
-
-    // Validate dispatcherId before filtering
     if (dispatcherId) {
-      if (!isValidId(dispatcherId)) {
-        return NextResponse.json(
-          { error: 'Invalid dispatcher ID format' },
-          { status: 400 }
-        );
-      }
-      filteredTrips = trips.filter((t) => t.dispatcherId === dispatcherId);
+      filteredTrips = trips.filter((t: any) => t.dispatcherId === dispatcherId);
     }
 
     return NextResponse.json({ trips: filteredTrips });
@@ -62,7 +51,6 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Validate request body
     const validation = validateTripData(body);
     if (!validation.valid) {
       return NextResponse.json(
@@ -72,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     const newTrip = {
-      id: `trip-${stopCounter++}`,
+      id: `trip-${tripCounter++}`,
       name: body.name.trim(),
       dispatcherId: body.dispatcherId,
       date: body.date || new Date().toISOString(),
@@ -88,7 +76,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(newTrip, { status: 201 });
   } catch (error) {
-    // Handle JSON parsing errors
     if (error instanceof SyntaxError) {
       console.error('Invalid JSON in request body:', error);
       return NextResponse.json(

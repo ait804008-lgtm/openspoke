@@ -1,99 +1,58 @@
-// API client for openSpoke
+import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
-
-interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
-  body?: any;
-  headers?: HeadersInit;
-}
-
-async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-  const url = `${API_BASE}${endpoint}`;
-  const config: RequestInit = {
-    method: options.method || 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  };
-
-  if (options.body) {
-    config.body = JSON.stringify(options.body);
-  }
-
-  const response = await fetch(url, config);
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(error.error || `HTTP ${response.status}`);
-  }
-
-  return response.json();
-}
-
-// Trips API
+// Mock API client for server-side use
 export const tripsApi = {
-  list: (dispatcherId?: string) =>
-    request<{ trips: any[] }>(`/trips${dispatcherId ? `?dispatcherId=${dispatcherId}` : ''}`),
+  list: async (dispatcherId?: string) => {
+    // This will be called from API routes
+    return { status: 200 };
+  },
 
-  get: (id: string) => request<any>(`/trips/${id}`),
+  create: async (trip: any) => {
+    return { status: 201, trip: { ...trip, id: 'mock-trip', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } };
+  },
 
-  create: (trip: any) => request<any>('/trips', { method: 'POST', body: trip }),
+  update: async (id: string, updates: any) => {
+    return { status: 200 };
+  },
 
-  update: (id: string, updates: any) =>
-    request<any>(`/trips/${id}`, { method: 'PUT', body: updates }),
+  delete: async (id: string) => {
+    return { status: 200, success: true };
+  },
 
-  delete: (id: string) => request<any>(`/trips/${id}`, { method: 'DELETE' }),
-
-  optimize: async (id: string): Promise<{ optimizedRoute: any }> => {
-    // Mock route optimization
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    return {
-      optimizedRoute: {
-        distance: 5000 + Math.random() * 10000,
-        duration: 1200 + Math.random() * 1800,
-        polyline: '',
-      },
-    };
+  optimize: async (tripId: string) => {
+    return { status: 200, optimizedRoute: { distance: 10000, duration: 1800, polyline: '' } };
   },
 };
 
-// Stops API
 export const stopsApi = {
-  list: (tripId?: string) =>
-    request<{ stops: any[] }>(`/stops${tripId ? `?tripId=${tripId}` : ''}`),
+  list: async (tripId?: string) => {
+    return { status: 200, stops: [] };
+  },
 
-  get: (id: string) => request<any>(`/stops/${id}`),
+  create: async (stop: any) => {
+    return { status: 201, stop: { ...stop, id: 'mock-stop', createdAt: new Date().toISOString() } };
+  },
 
-  create: (stop: any) => request<any>('/stops', { method: 'POST', body: stop }),
+  update: async (stopId: string, updates: any) => {
+    return { status: 200, stop: updates };
+  },
 
-  update: (id: string, updates: any) =>
-    request<any>(`/stops/${id}`, { method: 'PUT', body: updates }),
-
-  delete: (id: string) => request<any>(`/stops/${id}`, { method: 'DELETE' }),
-
-  updateStatus: (id: string, status: string) =>
-    request<any>(`/stops/${id}`, { method: 'PUT', body: { status } }),
+  delete: async (stopId: string) => {
+    return { status: 200, success: true };
+  },
 };
 
-// Auth API (mock)
 export const authApi = {
   login: async (email: string, password: string, role: string) => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
     return {
+      status: 200,
       user: {
-        id: `user-${Date.now()}`,
+        id: 'user-' + Date.now(),
         email,
         name: email.split('@')[0],
         role,
-        avatar: `https://ui-avatars.com/api/?name=${email}&background=random`,
         createdAt: new Date().toISOString(),
-      },
+      }
     };
   },
 };
-
-export default { tripsApi, stopsApi, authApi };

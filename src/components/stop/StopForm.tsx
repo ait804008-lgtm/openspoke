@@ -6,20 +6,11 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardHeader, CardBody, CardFooter } from '@/components/ui/Card';
 import { X, AlertCircle } from 'lucide-react';
+import { validatePhone, validateName, validateStreet, validateCity } from '@/lib/validation';
 
 interface StopFormProps {
   tripId: string;
   onClose: () => void;
-}
-
-// Validation functions
-function validatePhone(phone: string): boolean {
-  const phoneRegex = /^\(\d{3}\)\s*\d{3}-\d{4}$/;
-  return phoneRegex.test(phone);
-}
-
-function validateName(name: string): boolean {
-  return name.trim().length > 0 && name.trim().length <= 100;
 }
 
 export function StopForm({ tripId, onClose }: StopFormProps) {
@@ -40,7 +31,6 @@ export function StopForm({ tripId, onClose }: StopFormProps) {
     e.preventDefault();
     setError('');
 
-    // Validation
     if (!street || !city || !contactName || !contactPhone) {
       setError('Please fill in all required fields');
       return;
@@ -56,12 +46,12 @@ export function StopForm({ tripId, onClose }: StopFormProps) {
       return;
     }
 
-    if (street.length > 200) {
+    if (!validateStreet(street)) {
       setError('Street address is too long (max 200 characters)');
       return;
     }
 
-    if (city.length > 100) {
+    if (!validateCity(city)) {
       setError('City is too long (max 100 characters)');
       return;
     }
@@ -126,6 +116,7 @@ export function StopForm({ tripId, onClose }: StopFormProps) {
               onChange={(e) => setStreet(e.target.value)}
               required
               maxLength={200}
+              helperText="Max 200 characters"
             />
             <Input
               label="City *"
@@ -134,6 +125,7 @@ export function StopForm({ tripId, onClose }: StopFormProps) {
               onChange={(e) => setCity(e.target.value)}
               required
               maxLength={100}
+              helperText="Max 100 characters"
             />
           </div>
           <div className="grid md:grid-cols-2 gap-4">
@@ -143,6 +135,7 @@ export function StopForm({ tripId, onClose }: StopFormProps) {
               value={state}
               onChange={(e) => setState(e.target.value)}
               maxLength={50}
+              helperText="Max 50 characters"
             />
             <Input
               label="ZIP Code"
@@ -150,6 +143,7 @@ export function StopForm({ tripId, onClose }: StopFormProps) {
               value={zipCode}
               onChange={(e) => setZipCode(e.target.value)}
               maxLength={20}
+              helperText="Max 20 characters"
             />
           </div>
           <div className="border-t pt-4">
@@ -182,6 +176,7 @@ export function StopForm({ tripId, onClose }: StopFormProps) {
               value={packageInfo}
               onChange={(e) => setPackageInfo(e.target.value)}
               maxLength={500}
+              helperText="Max 500 characters"
             />
           </div>
           <Input
@@ -190,8 +185,9 @@ export function StopForm({ tripId, onClose }: StopFormProps) {
             value={instructions}
             onChange={(e) => setInstructions(e.target.value)}
             multiline
-            maxLength={500}
             rows={3}
+            maxLength={500}
+            helperText="Max 500 characters"
           />
         </CardBody>
         <CardFooter className="flex justify-end space-x-2">

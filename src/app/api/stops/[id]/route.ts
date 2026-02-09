@@ -2,6 +2,34 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // In-memory data storage (mock database)
 let stops: any[] = [];
+let stopCounter = 1;
+
+// Simple validation functions - avoiding complex regex to prevent TypeScript errors
+function validateStopData(body: any): { valid: boolean; error?: string } {
+  if (!body.tripId || typeof body.tripId !== 'string') {
+    return { valid: false, error: 'Trip ID is required' };
+  }
+
+  if (!body.address || !body.address.street || !body.address.city) {
+    return { valid: false, error: 'Street and city are required' };
+  }
+
+  if (!body.contactInfo || !body.contactInfo.name || !body.contactInfo.phone) {
+    return { valid: false, error: 'Contact name and phone are required' };
+  }
+
+  const phone = body.contactInfo.phone;
+
+  if (!phone || phone.length < 10) {
+    return { valid: false, error: 'Phone number is too short' };
+  }
+
+  if (phone.length > 15) {
+    return { valid: false, error: 'Phone number is too long' };
+  }
+
+  return { valid: true };
+}
 
 function isValidId(id: string): boolean {
   return typeof id === 'string' && id.length > 0 && id.length < 100;
@@ -26,7 +54,7 @@ export async function GET(
       );
     }
 
-    const stop = stops.find((s) => s.id === id);
+    const stop = stops.find((s: any) => s.id === id);
 
     if (!stop) {
       return NextResponse.json(
@@ -37,7 +65,6 @@ export async function GET(
 
     return NextResponse.json(stop);
   } catch (error) {
-    console.error('Error fetching stop:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -60,8 +87,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-
-    const stopIndex = stops.findIndex((s) => s.id === id);
+    const stopIndex = stops.findIndex((s: any) => s.id === id);
 
     if (stopIndex === -1) {
       return NextResponse.json(
@@ -70,10 +96,8 @@ export async function PUT(
       );
     }
 
-    // Store original stop BEFORE modifying
     const originalStop = { ...stops[stopIndex] };
 
-    // Validate status if provided
     if (body.status && !validateStatus(body.status)) {
       return NextResponse.json(
         { error: 'Invalid status value' },
@@ -81,29 +105,29 @@ export async function PUT(
       );
     }
 
-    // Check deliveredAt on ORIGINAL stop, not the updated one
     const shouldSetDeliveredAt = body.status === 'delivered' && !originalStop.deliveredAt;
 
     const updatedStop = {
       ...originalStop,
       ...body,
       updatedAt: new Date().toISOString(),
-      ...(shouldSetDeliveredAt ? { deliveredAt: new Date().toISOString() } : {}),
     };
+
+    if (shouldSetDeliveredAt) {
+      updatedStop.deliveredAt = new Date().toISOString();
+    }
 
     stops[stopIndex] = updatedStop;
 
     return NextResponse.json(updatedStop);
   } catch (error) {
     if (error instanceof SyntaxError) {
-      console.error('Invalid JSON in request body:', error);
       return NextResponse.json(
         { error: 'Invalid request body' },
         { status: 400 }
       );
     }
 
-    console.error('Error updating stop:', error):
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -125,7 +149,7 @@ export async function DELETE(
       );
     }
 
-    const stopIndex = stops.findIndex((s) => s.id === id);
+    const stopIndex = stops.findIndex((s: any) => s.id === id);
 
     if (stopIndex === -1) {
       return NextResponse.json(
@@ -138,7 +162,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting stop:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

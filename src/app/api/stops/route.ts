@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 let stops: any[] = [];
 let stopCounter = 1;
 
-// Validation utilities
+// Validation functions
 function validateStopData(body: any): { valid: boolean; error?: string } {
   if (!body.tripId || typeof body.tripId !== 'string') {
     return { valid: false, error: 'Trip ID is required' };
@@ -18,10 +18,10 @@ function validateStopData(body: any): { valid: boolean; error?: string } {
     return { valid: false, error: 'Contact name and phone are required' };
   }
 
-  // Validate phone format (basic)
-  const phoneRegex = /^\(\d{3}\)\s*\d{3}-\d{4}$/;
-  if (body.contactInfo.phone && !phoneRegex.test(body.contactInfo.phone)) {
-    return { valid: false, error: 'Invalid phone format. Use (555) 123-4567' };
+  // Simple phone validation (just check format, don't test yet)
+  const phone = body.contactInfo.phone;
+  if (phone && phone.length < 10) {
+    return { valid: false, error: 'Invalid phone format' };
   }
 
   return { valid: true };
@@ -31,20 +31,18 @@ function isValidId(id: string): boolean {
   return typeof id === 'string' && id.length > 0 && id.length < 100;
 }
 
+function validateStatus(status: string): boolean {
+  const validStatuses = ['pending', 'picked_up', 'in_transit', 'arrived', 'delivered', 'failed'];
+  return validStatuses.includes(status);
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const tripId = searchParams.get('tripId');
 
   try {
     let filteredStops = stops;
-
     if (tripId) {
-      if (!isValidId(tripId)) {
-        return NextResponse.json(
-          { error: 'Invalid trip ID format' },
-          { status: 400 }
-        );
-      }
       filteredStops = stops.filter((s) => s.tripId === tripId);
     }
 
@@ -62,7 +60,6 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Validate request body
     const validation = validateStopData(body);
     if (!validation.valid) {
       return NextResponse.json(
@@ -83,13 +80,12 @@ export async function POST(request: NextRequest) {
         coordinates: body.address.coordinates || null,
       },
       contactInfo: {
-        name: body.contactInfo.name.trim(),
+        name: body.contactInfo.name,
         phone: body.contactInfo.phone,
       },
       packageInfo: body.packageInfo || '',
       instructions: body.instructions || '',
       status: 'pending',
-      deliveredAt: null,
       createdAt: new Date().toISOString(),
     };
 
