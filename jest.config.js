@@ -7,7 +7,15 @@ const createJestConfig = nextJest({
 const config = {
   ...createJestConfig,
   testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^react-dom$': '<rootDir>/node_modules/react-dom',
+    '^react$': '<rootDir>/node_modules/react',
+    '^@testing-library/react$': '<rootDir>/node_modules/@testing-library/react',
+    '^@testing-library/jest-dom$': '<rootDir>/node_modules/@testing-library/jest-dom',
+    '^@testing-library/user-event$': '<rootDir>/node_modules/@testing-library/user-event',
+  },
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
       tsconfig: {
@@ -17,21 +25,20 @@ const config = {
       },
     }],
   },
-  moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
-  },
+  testMatch: [
+    '**/__tests__/**/*.test.[jt]s?(x)',
+  ],
+  testPathIgnorePatterns: ['/node_modules/', '/.next/'],
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',
-    '!src/**/*.stories.{js,jsx,ts,tsx}',
     '!src/**/__tests__/**',
+    '!src/**/*.stories.{js,jsx,ts,tsx}',
   ],
-  testMatch: [
-    '**/__tests__/**/*.[jt]s?(x)',
-    '**/?(*.)+(spec|test).[jt]s?(x)',
-  ],
-  testPathIgnorePatterns: ['/node_modules/', '/.next/'],
-  coverageThreshold: {
+  testEnvironmentOptions: {
+    customExportConditions: ['node', 'node-addons'],
+  },
+  coverageThresholds: {
     global: {
       branches: 70,
       functions: 70,
